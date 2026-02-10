@@ -233,8 +233,6 @@ You can add screenshots such as:
 /screenshots/categories.png
 <img width="1898" height="869" alt="image" src="https://github.com/user-attachments/assets/361607f1-dbed-45f2-ab7c-0bcf79944ec4" />
 
-```
-
 ---
 
 ## Contributing
