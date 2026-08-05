@@ -27,31 +27,76 @@ class ProductCrudController extends CrudController
 
     protected function setupListOperation()
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Filters
+        |--------------------------------------------------------------------------
+        */
+
+        // CRUD::filter('low_stock')
+        //     ->type('simple')
+        //     ->label('Low Stock')
+        //     ->whenActive(function () {
+        //         CRUD::addClause('whereColumn', 'quantity', '<=', 'restock_level');
+        //         CRUD::addClause('where', 'quantity', '>', 0);
+        //     });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Columns
+        |--------------------------------------------------------------------------
+        */
+
         CRUD::column('id');
+
         CRUD::column('image')
             ->type('image')
-            ->value(fn($value) => $value ?: 'https://placehold.co/50x50')
-            ->label('Image');
-        CRUD::column('name')
-            ->type('text');
+            ->disk('public')
+            ->label('Image')
+            ->height('50px')
+            ->width('50px');
+
+        CRUD::column('name');
+
         CRUD::column('category')
             ->type('relationship')
             ->attribute('name')
             ->label('Category');
+
         CRUD::column('price')
             ->type('number')
-            ->prefix('$')
+            ->prefix('₹')
             ->decimals(2);
+
         CRUD::column('quantity')
-            ->type('number')
-            ->label('Qty');
+            ->label('Quantity');
+
+        CRUD::column('restock_level')
+            ->label('Restock Level');
+
+        CRUD::addColumn([
+            'name' => 'stock_status',
+            'label' => 'Stock Status',
+            'type' => 'closure',
+            'function' => function ($entry) {
+
+                if ($entry->quantity == 0) {
+                    return '<span class="badge bg-danger">Out of Stock</span>';
+                }
+
+                if ($entry->quantity <= $entry->restock_level) {
+                    return '<span class="badge bg-warning">Low Stock</span>';
+                }
+
+                return '<span class="badge bg-success">In Stock</span>';
+            },
+            'escaped' => false,
+        ]);
+
         CRUD::column('is_available')
             ->type('boolean')
-            ->label('Available')
-            ->options([
-                0 => 'No',
-                1 => 'Yes'
-            ]);
+            ->label('Available');
+
         CRUD::column('created_at')
             ->type('datetime');
 
@@ -89,6 +134,7 @@ class ProductCrudController extends CrudController
             'category_id' => 'required|exists:categories,id',
             'price' => 'required|numeric|min:0',
             'quantity' => 'required|integer|min:0',
+            'restock_level' => 'required|integer|min:1',
         ]);
 
         CRUD::field('name')
@@ -96,11 +142,11 @@ class ProductCrudController extends CrudController
             ->label('Product Name');
 
         CRUD::field('category_id')
-            ->type('select2')
-            ->label('Category')
+            ->type('select')
             ->entity('category')
             ->attribute('name')
-            ->model(Category::class);
+            ->model(Category::class)
+            ->label('Category');
 
         CRUD::field('description')
             ->type('textarea')
@@ -108,13 +154,19 @@ class ProductCrudController extends CrudController
 
         CRUD::field('price')
             ->type('number')
-            ->prefix('$')
-            ->attributes(['step' => '0.01'])
+            ->attributes([
+                'step' => '0.01'
+            ])
             ->label('Price');
 
         CRUD::field('quantity')
             ->type('number')
             ->label('Quantity');
+
+        CRUD::field('restock_level')
+            ->type('number')
+            ->default(10)
+            ->label('Restock Level');
 
         CRUD::field('image')
             ->type('upload')
@@ -126,8 +178,8 @@ class ProductCrudController extends CrudController
 
         CRUD::field('is_available')
             ->type('checkbox')
-            ->label('Available for Sale')
-            ->default(true);
+            ->default(true)
+            ->label('Available for Sale');
     }
 
     protected function setupUpdateOperation()
@@ -142,27 +194,58 @@ class ProductCrudController extends CrudController
     {
         CRUD::column('image')
             ->type('image')
-            ->value(fn($value) => $value ?: 'https://placehold.co/300x300')
-            ->label('Image');
+            ->disk('public')
+            ->label('Image')
+            ->height('300px')
+            ->width('300px');
+
         CRUD::column('name');
+
         CRUD::column('category')
             ->type('relationship')
             ->attribute('name');
-        CRUD::column('description')
-            ->type('textarea');
+
+        CRUD::column('description');
+
         CRUD::column('price')
             ->type('number')
-            ->prefix('$')
+            ->prefix('₹')
             ->decimals(2);
+
         CRUD::column('quantity');
+
+        CRUD::column('restock_level');
+
+        CRUD::addColumn([
+            'name' => 'stock_status',
+            'label' => 'Stock Status',
+            'type' => 'closure',
+            'function' => function ($entry) {
+
+                if ($entry->quantity == 0) {
+                    return '<span class="badge bg-danger">Out of Stock</span>';
+                }
+
+                if ($entry->quantity <= $entry->restock_level) {
+                    return '<span class="badge bg-warning">Low Stock</span>';
+                }
+
+                return '<span class="badge bg-success">In Stock</span>';
+            },
+            'escaped' => false,
+        ]);
+
         CRUD::column('is_available')
             ->type('boolean')
             ->label('Available');
+
         CRUD::column('created_at')
             ->type('datetime');
+
         CRUD::column('updated_at')
             ->type('datetime');
     }
+<<<<<<< HEAD
 
 
     // After setup()
@@ -192,3 +275,6 @@ class ProductCrudController extends CrudController
         return view('admin.product-preview', compact('product'));
     }
 }
+=======
+}
+>>>>>>> stages

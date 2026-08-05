@@ -94,7 +94,7 @@
                                 <tr>
                                     <td>{{ $product->name }}</td>
                                     <td>{{ $product->category->name ?? 'N/A' }}</td>
-                                    <td>${{ number_format($product->price, 2) }}</td>
+                                    <td>₹{{ number_format($product->price, 2) }}</td>
                                     <td>
                                         <span class="badge badge-{{ $product->quantity > 10 ? 'success' : ($product->quantity > 0 ? 'warning' : 'danger') }}">
                                             {{ $product->quantity }}
