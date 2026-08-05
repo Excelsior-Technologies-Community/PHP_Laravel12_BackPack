@@ -16,13 +16,14 @@ class Product extends Model
         'description',
         'price',
         'quantity',
+        'restock_level',
         'image',
-        'is_available'
+        'is_available',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
-        'is_available' => 'boolean'
+        'is_available' => 'boolean',
     ];
 
     public function category()
@@ -30,20 +31,22 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
-    // Accessor for availability
+    
     public function getAvailabilityAttribute()
     {
         return $this->is_available ? 'Available' : 'Out of Stock';
     }
 
-    // Accessor for stock status
     public function getStockStatusAttribute()
     {
         if ($this->quantity == 0) {
             return 'Out of Stock';
-        } elseif ($this->quantity < 10) {
+        }
+
+        if ($this->quantity <= $this->restock_level) {
             return 'Low Stock';
         }
+
         return 'In Stock';
     }
 }
