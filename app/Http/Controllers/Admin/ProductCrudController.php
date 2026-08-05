@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Product;
 use App\Models\Category;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 
 class ProductCrudController extends CrudController
@@ -14,32 +15,38 @@ class ProductCrudController extends CrudController
     use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\ShowOperation;
+<<<<<<< HEAD
     use \Backpack\CRUD\app\Http\Controllers\Operations\BulkDeleteOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
 
     // In setup() method
+=======
+    /**
+     * Setup CRUD
+     */
+>>>>>>> development
     public function setup()
     {
         CRUD::setModel(Product::class);
+
         CRUD::setRoute(config('backpack.base.route_prefix') . '/product');
-        CRUD::setEntityNameStrings('product', 'products');
+
+        CRUD::setEntityNameStrings('Product', 'Products');
+
+        // Pagination
+        $this->crud->setDefaultPageLength(5);
+
+        $this->crud->setPageLengthMenu([10, 25, 50, 100]);
+
+        // Default order
+        $this->crud->orderBy('id', 'ASC');
     }
 
+    /**
+     * List Operation
+     */
     protected function setupListOperation()
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Filters
-        |--------------------------------------------------------------------------
-        */
-
-        // CRUD::filter('low_stock')
-        //     ->type('simple')
-        //     ->label('Low Stock')
-        //     ->whenActive(function () {
-        //         CRUD::addClause('whereColumn', 'quantity', '<=', 'restock_level');
-        //         CRUD::addClause('where', 'quantity', '>', 0);
-        //     });
 
         /*
         |--------------------------------------------------------------------------
@@ -47,57 +54,84 @@ class ProductCrudController extends CrudController
         |--------------------------------------------------------------------------
         */
 
-        CRUD::column('id');
+        CRUD::column('id')
+            ->label('ID');
+
+
 
         CRUD::column('image')
             ->type('image')
             ->disk('public')
-            ->label('Image')
-            ->height('50px')
-            ->width('50px');
+            ->height('60px')
+            ->width('60px')
+            ->label('Image');
 
-        CRUD::column('name');
+
+
+        CRUD::column('name')
+            ->label('Product Name');
+
+
 
         CRUD::column('category')
             ->type('relationship')
             ->attribute('name')
             ->label('Category');
 
+
+
         CRUD::column('price')
             ->type('number')
             ->prefix('₹')
             ->decimals(2);
 
-        CRUD::column('quantity')
-            ->label('Quantity');
+
+
+        CRUD::column('quantity');
+
+
 
         CRUD::column('restock_level')
-            ->label('Restock Level');
+            ->label('Restock');
+
+
 
         CRUD::addColumn([
             'name' => 'stock_status',
             'label' => 'Stock Status',
             'type' => 'closure',
+            'escaped' => false,
+
             'function' => function ($entry) {
 
                 if ($entry->quantity == 0) {
-                    return '<span class="badge bg-danger">Out of Stock</span>';
+
+                    return '<span class="badge bg-danger">
+            Out Of Stock
+            </span>';
+                } elseif ($entry->quantity <= $entry->restock_level) {
+
+                    return '<span class="badge bg-warning text-dark">
+            Low Stock
+            </span>';
                 }
 
-                if ($entry->quantity <= $entry->restock_level) {
-                    return '<span class="badge bg-warning">Low Stock</span>';
-                }
-
-                return '<span class="badge bg-success">In Stock</span>';
-            },
-            'escaped' => false,
+                return '<span class="badge bg-success">
+        In Stock
+        </span>';
+            }
         ]);
+
+
 
         CRUD::column('is_available')
             ->type('boolean')
             ->label('Available');
 
+
+
         CRUD::column('created_at')
+<<<<<<< HEAD
             ->type('datetime');
 
         CRUD::addFilter(
@@ -124,126 +158,307 @@ class ProductCrudController extends CrudController
             function ($value) {
                 CRUD::addClause('where', 'category_id', $value);
             }
+=======
+            ->type('datetime')
+            ->label('Created');
+
+
+
+        CRUD::column('updated_at')
+            ->type('datetime')
+            ->label('Updated');
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Buttons
+        |--------------------------------------------------------------------------
+        */
+
+        
+        $this->crud->addButtonFromView(
+            'line',
+            'preview',
+            'preview_product',
+            'beginning'
+>>>>>>> development
         );
     }
+
+    /**
+|--------------------------------------------------------------------------
+| Create Operation
+|--------------------------------------------------------------------------
+     */
 
     protected function setupCreateOperation()
     {
         CRUD::setValidation([
+
             'name' => 'required|min:2|max:255',
+
             'category_id' => 'required|exists:categories,id',
+
             'price' => 'required|numeric|min:0',
+
             'quantity' => 'required|integer|min:0',
+
             'restock_level' => 'required|integer|min:1',
+
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+
         ]);
 
-        CRUD::field('name')
-            ->type('text')
-            ->label('Product Name');
 
-        CRUD::field('category_id')
-            ->type('select')
-            ->entity('category')
-            ->attribute('name')
-            ->model(Category::class)
-            ->label('Category');
+        CRUD::field([
 
-        CRUD::field('description')
-            ->type('textarea')
-            ->label('Description');
+            'name' => 'name',
 
-        CRUD::field('price')
-            ->type('number')
-            ->attributes([
-                'step' => '0.01'
-            ])
-            ->label('Price');
+            'label' => 'Product Name',
 
-        CRUD::field('quantity')
-            ->type('number')
-            ->label('Quantity');
+            'type' => 'text',
 
-        CRUD::field('restock_level')
-            ->type('number')
-            ->default(10)
-            ->label('Restock Level');
+            'tab' => 'Basic Details'
 
-        CRUD::field('image')
-            ->type('upload')
-            ->withFiles([
+        ]);
+
+
+        CRUD::field([
+
+            'name' => 'category_id',
+
+            'label' => 'Category',
+
+            'type' => 'select',
+
+            'entity' => 'category',
+
+            'model' => \App\Models\Category::class,
+
+            'attribute' => 'name',
+
+            'tab' => 'Basic Details'
+
+        ]);
+
+
+        CRUD::field([
+
+            'name' => 'description',
+
+            'label' => 'Description',
+
+            'type' => 'textarea',
+
+            'tab' => 'Basic Details'
+
+        ]);
+
+
+        CRUD::field([
+
+            'name' => 'price',
+
+            'label' => 'Price',
+
+            'type' => 'number',
+
+            'attributes' => [
+
+                'step' => '0.01',
+
+                'min' => 0
+
+            ],
+
+            'tab' => 'Inventory'
+
+        ]);
+
+
+        CRUD::field([
+
+            'name' => 'quantity',
+
+            'label' => 'Quantity',
+
+            'type' => 'number',
+
+            'tab' => 'Inventory'
+
+        ]);
+
+
+        CRUD::field([
+
+            'name' => 'restock_level',
+
+            'label' => 'Restock Level',
+
+            'type' => 'number',
+
+            'default' => 10,
+
+            'tab' => 'Inventory'
+
+        ]);
+
+
+        CRUD::field([
+
+            'name' => 'image',
+
+            'label' => 'Product Image',
+
+            'type' => 'upload',
+
+            'withFiles' => [
+
                 'disk' => 'public',
-                'path' => 'products',
-            ])
-            ->label('Product Image');
 
-        CRUD::field('is_available')
-            ->type('checkbox')
-            ->default(true)
-            ->label('Available for Sale');
+                'path' => 'products'
+
+            ],
+
+            'tab' => 'Media'
+
+        ]);
+
+
+        CRUD::field([
+
+            'name' => 'is_available',
+
+            'label' => 'Available',
+
+            'type' => 'checkbox',
+
+            'default' => true,
+
+            'tab' => 'Status'
+
+        ]);
     }
+
+
+    /**
+|--------------------------------------------------------------------------
+| Update Operation
+|--------------------------------------------------------------------------
+     */
 
     protected function setupUpdateOperation()
     {
+
         $this->setupCreateOperation();
 
+<<<<<<< HEAD
         // Add custom button
         $this->crud->addButtonFromView('line', 'preview', 'preview_product', 'beginning');
+=======
+        // Preview Button
+        $this->crud->addButtonFromView(
+            'line',
+            'preview',
+            'preview_product',
+            'beginning'
+        );
+>>>>>>> development
     }
 
-    protected function setupShowOperation()
+    public function store()
     {
-        CRUD::column('image')
-            ->type('image')
-            ->disk('public')
-            ->label('Image')
-            ->height('300px')
-            ->width('300px');
 
-        CRUD::column('name');
+        $response = $this->traitStore();
 
-        CRUD::column('category')
-            ->type('relationship')
-            ->attribute('name');
+        \App\Models\ProductActivity::create([
 
-        CRUD::column('description');
+            'product_id' => $this->crud->entry->id,
 
-        CRUD::column('price')
-            ->type('number')
-            ->prefix('₹')
-            ->decimals(2);
+            'action' => 'Created',
 
-        CRUD::column('quantity');
+            'description' => auth()->user()->name .
+                ' created product "' .
+                $this->crud->entry->name . '"'
 
-        CRUD::column('restock_level');
-
-        CRUD::addColumn([
-            'name' => 'stock_status',
-            'label' => 'Stock Status',
-            'type' => 'closure',
-            'function' => function ($entry) {
-
-                if ($entry->quantity == 0) {
-                    return '<span class="badge bg-danger">Out of Stock</span>';
-                }
-
-                if ($entry->quantity <= $entry->restock_level) {
-                    return '<span class="badge bg-warning">Low Stock</span>';
-                }
-
-                return '<span class="badge bg-success">In Stock</span>';
-            },
-            'escaped' => false,
         ]);
 
-        CRUD::column('is_available')
-            ->type('boolean')
-            ->label('Available');
+        return $response;
+    }
 
-        CRUD::column('created_at')
-            ->type('datetime');
 
-        CRUD::column('updated_at')
-            ->type('datetime');
+
+    public function update()
+    {
+
+        $response = $this->traitUpdate();
+
+        \App\Models\ProductActivity::create([
+
+            'product_id' => $this->crud->entry->id,
+
+            'action' => 'Updated',
+
+            'description' => auth()->user()->name .
+                ' updated product "' .
+                $this->crud->entry->name . '"'
+
+        ]);
+
+        return $response;
+    }
+
+    public function preview($id)
+    {
+        $product = Product::with('category')->findOrFail($id);
+
+        return view('admin.product-preview', compact('product'));
+    }
+
+    public function exportCsv(): StreamedResponse
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=products.csv',
+        ];
+
+        $callback = function () {
+
+            $file = fopen('php://output', 'w');
+
+            fputcsv($file, [
+                'ID',
+                'Name',
+                'Category',
+                'Price',
+                'Quantity',
+                'Available'
+            ]);
+
+            Product::with('category')->get()->each(function ($product) use ($file) {
+
+                fputcsv($file, [
+
+                    $product->id,
+
+                    $product->name,
+
+                    optional($product->category)->name,
+
+                    $product->price,
+
+                    $product->quantity,
+
+                    $product->is_available ? 'Yes' : 'No',
+
+                ]);
+            });
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 <<<<<<< HEAD
 
