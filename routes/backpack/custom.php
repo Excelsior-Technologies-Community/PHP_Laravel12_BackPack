@@ -20,4 +20,9 @@ Route::group([
 
     Route::crud('product', ProductCrudController::class);
 
+    Route::get('product/export/csv', [ProductCrudController::class, 'exportCsv'])
+        ->name('product.export.csv');
+
+    Route::get('product/{id}/preview', [ProductCrudController::class, 'preview'])
+        ->name('product.preview');
 });
