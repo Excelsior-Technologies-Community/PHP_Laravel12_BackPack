@@ -1,0 +1,28 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('stock_adjustments', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('type'); // stock_in, stock_out, damaged, manual_override
+            $table->integer('quantity_before');
+            $table->integer('quantity_change'); // positive or negative
+            $table->integer('quantity_after');
+            $table->string('reason')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('stock_adjustments');
+    }
+};
