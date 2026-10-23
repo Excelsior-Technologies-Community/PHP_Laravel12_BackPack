@@ -3,112 +3,121 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\AuditLog;
 
 class DashboardController extends Controller
 {
     public function index()
     {
+        $totalProducts = Product::count();
+        $totalCategories = Category::count();
+        $totalSuppliers = Supplier::count();
+
+        $healthyCount = Product::whereColumn('quantity', '>', 'restock_level')->count();
+        $lowStockCount = Product::whereColumn('quantity', '<=', 'restock_level')
+            ->where('quantity', '>', 0)
+            ->count();
+        $outOfStockCount = Product::where('quantity', 0)->count();
+
+        $totalInventoryValue = Product::selectRaw('SUM(price * quantity) as total')->value('total') ?? 0;
+        $totalStockQuantity = Product::sum('quantity') ?? 0;
+        $averagePrice = Product::avg('price') ?? 0;
+
+        // Estimated Wholesale Procurement Cost (~70% of retail)
+        $estimatedProcurementCost = $totalInventoryValue * 0.70;
+        $projectedGrossMargin = $totalInventoryValue - $estimatedProcurementCost;
+        $stockHealthScore = $totalProducts > 0 ? round(($healthyCount / $totalProducts) * 100, 1) : 100;
+
         $stats = [
-            'total_products' => Product::count(),
-
-            'total_categories' => Category::count(),
-
+            'total_products' => $totalProducts,
+            'total_categories' => $totalCategories,
+            'total_suppliers' => $totalSuppliers,
             'available_products' => Product::where('is_available', true)->count(),
-
-            'low_stock_products' => Product::whereColumn('quantity', '<=', 'restock_level')
-                ->where('quantity', '>', 0)
-                ->count(),
-
-            'out_of_stock' => Product::where('quantity', 0)->count(),
-
-            'total_stock_quantity' => Product::sum('quantity'),
-
-            // Total Inventory Value
-            'total_inventory_value' => Product::selectRaw('SUM(price * quantity) as total')
-                ->value('total') ?? 0,
-
-            // Average Product Price
-            'average_price' => Product::avg('price') ?? 0,
+            'healthy_products' => $healthyCount,
+            'low_stock_products' => $lowStockCount,
+            'out_of_stock' => $outOfStockCount,
+            'total_stock_quantity' => $totalStockQuantity,
+            'total_inventory_value' => $totalInventoryValue,
+            'average_price' => $averagePrice,
+            'procurement_cost' => $estimatedProcurementCost,
+            'gross_margin' => $projectedGrossMargin,
+            'stock_health_score' => $stockHealthScore,
         ];
 
         /*
         |--------------------------------------------------------------------------
-        | Dashboard Data
+        | Chart 1: Category Asset Breakdown (Donut Chart)
         |--------------------------------------------------------------------------
         */
+        $categoryBreakdown = Category::with('products')->get()->map(function ($cat) {
+            $val = $cat->products->sum(fn($p) => $p->price * $p->quantity);
+            return [
+                'name' => $cat->name,
+                'value' => round($val, 2),
+                'count' => $cat->products->count(),
+            ];
+        })->sortByDesc('value')->values();
 
-        $recent_products = Product::with('category')
-            ->latest()
-            ->take(5)
-            ->get();
-
-        $top_categories = Category::withCount('products')
-            ->orderByDesc('products_count')
-            ->take(5)
-            ->get();
-
-        $highest_price_product = Product::orderByDesc('price')->first();
-
-        $lowest_price_product = Product::orderBy('price')->first();
+        $chartCategoryLabels = $categoryBreakdown->pluck('name')->toArray();
+        $chartCategoryValues = $categoryBreakdown->pluck('value')->toArray();
 
         /*
         |--------------------------------------------------------------------------
-        | Inventory Dashboard
+        | Chart 2: Top 5 High-Value Inventory Lines (Horizontal Bar Chart)
         |--------------------------------------------------------------------------
         */
+        $topValuableProducts = Product::selectRaw('id, name, price, quantity, (price * quantity) as total_val')
+            ->orderByDesc('total_val')
+            ->take(5)
+            ->get();
 
-        $low_stock_products = Product::with('category')
+        $chartTopProductLabels = $topValuableProducts->pluck('name')->toArray();
+        $chartTopProductValues = $topValuableProducts->pluck('total_val')->toArray();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Chart 3: Stock Health Distribution (Doughnut Chart)
+        |--------------------------------------------------------------------------
+        */
+        $chartStockHealthLabels = ['Healthy Stock', 'Low Stock', 'Out of Stock'];
+        $chartStockHealthValues = [$healthyCount, $lowStockCount, $outOfStockCount];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Automated Reorder Watchdog: Products requiring Restock
+        |--------------------------------------------------------------------------
+        */
+        $watchdogProducts = Product::with(['category', 'supplier'])
             ->whereColumn('quantity', '<=', 'restock_level')
-            ->where('quantity', '>', 0)
             ->orderBy('quantity')
-            ->take(5)
-            ->get();
-
-        $out_of_stock_products = Product::with('category')
-            ->where('quantity', 0)
-            ->latest()
-            ->take(5)
-            ->get();
-
-        $valuable_products = Product::with('category')
-            ->orderByRaw('(price * quantity) DESC')
-            ->take(5)
-            ->get();
+            ->get()
+            ->map(function ($p) {
+                $deficit = max(0, ($p->restock_level * 2) - $p->quantity);
+                $p->recommended_order = max($deficit, 5);
+                $p->estimated_restock_cost = round($p->recommended_order * ($p->price * 0.7), 2);
+                return $p;
+            });
 
         /*
         |--------------------------------------------------------------------------
-        | Category Analytics
+        | Recent Activity Audit Logs
         |--------------------------------------------------------------------------
         */
-
-        $category_analytics = Category::withCount('products')
-            ->with('products')
-            ->get()
-            ->map(function ($category) {
-
-                $category->inventory_value = $category->products->sum(function ($product) {
-                    return $product->price * $product->quantity;
-                });
-
-                $category->stock_quantity = $category->products->sum('quantity');
-
-                return $category;
-            })
-            ->sortByDesc('inventory_value')
-            ->values();
+        $recentAuditLogs = AuditLog::latest()->take(6)->get();
 
         return view('admin.dashboard', compact(
             'stats',
-            'recent_products',
-            'top_categories',
-            'highest_price_product',
-            'lowest_price_product',
-            'low_stock_products',
-            'out_of_stock_products',
-            'valuable_products',
-            'category_analytics'
+            'chartCategoryLabels',
+            'chartCategoryValues',
+            'chartTopProductLabels',
+            'chartTopProductValues',
+            'chartStockHealthLabels',
+            'chartStockHealthValues',
+            'watchdogProducts',
+            'recentAuditLogs'
         ));
     }
 }
