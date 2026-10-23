@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 
 class DatabaseSeeder extends Seeder
@@ -13,10 +14,78 @@ class DatabaseSeeder extends Seeder
     {
         /*
         |--------------------------------------------------------------------------
+        | Suppliers
+        |--------------------------------------------------------------------------
+        */
+        $suppliers = [
+            [
+                'name' => 'Apex Tech Distributors',
+                'contact_person' => 'Rajesh Sharma',
+                'email' => 'contact@apextech.in',
+                'phone' => '+91 98765 43210',
+                'address' => 'Plot 42, Electronic City, Bengaluru, KA',
+                'payment_terms' => 'Net 30',
+                'lead_time_days' => 5,
+                'reliability_score' => 4.9,
+                'notes' => 'Primary electronics and accessories importer.',
+            ],
+            [
+                'name' => 'Vogue Textile Mills',
+                'contact_person' => 'Pooja Mehta',
+                'email' => 'sales@voguetextiles.com',
+                'phone' => '+91 98251 12345',
+                'address' => 'Ring Road Apparel Park, Surat, GJ',
+                'payment_terms' => 'Net 15',
+                'lead_time_days' => 3,
+                'reliability_score' => 4.7,
+                'notes' => 'Cotton and denim textile manufacturer.',
+            ],
+            [
+                'name' => 'Heritage Book Press & Stationary',
+                'contact_person' => 'Vikram Patel',
+                'email' => 'orders@heritagepress.co.in',
+                'phone' => '+91 98980 98765',
+                'address' => 'Daryaganj Publishing House, New Delhi, DL',
+                'payment_terms' => 'Net 60',
+                'lead_time_days' => 7,
+                'reliability_score' => 4.8,
+                'notes' => 'National publisher and technical books distributor.',
+            ],
+            [
+                'name' => 'GreenFlora Agritech & Tools',
+                'contact_person' => 'Sunil Verma',
+                'email' => 'supply@greenflora.org',
+                'phone' => '+91 94140 55667',
+                'address' => 'MIDC Industrial Area, Pune, MH',
+                'payment_terms' => 'Advance',
+                'lead_time_days' => 10,
+                'reliability_score' => 4.5,
+                'notes' => 'Manufacturer of heavy duty garden and lawn tools.',
+            ],
+            [
+                'name' => 'Olympus Sports Equipment',
+                'contact_person' => 'Amitabh Sen',
+                'email' => 'support@olympussports.in',
+                'phone' => '+91 99030 44556',
+                'address' => 'Sports Complex Zone, Meerut, UP',
+                'payment_terms' => 'Net 30',
+                'lead_time_days' => 4,
+                'reliability_score' => 4.9,
+                'notes' => 'Professional cricket bats and FIFA quality football gear.',
+            ],
+        ];
+
+        foreach ($suppliers as $s) {
+            Supplier::firstOrCreate(['email' => $s['email']], $s);
+        }
+
+        $allSuppliers = Supplier::all();
+
+        /*
+        |--------------------------------------------------------------------------
         | Categories
         |--------------------------------------------------------------------------
         */
-
         $categories = [
             [
                 'name' => 'Electronics',
@@ -46,7 +115,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($categories as $category) {
-            Category::create($category);
+            Category::firstOrCreate(['name' => $category['name']], $category);
         }
 
         /*
@@ -54,12 +123,13 @@ class DatabaseSeeder extends Seeder
         | Products
         |--------------------------------------------------------------------------
         */
-
         $products = [
-
             // Electronics
             [
                 'category_id' => 1,
+                'supplier_id' => $allSuppliers[0]?->id,
+                'sku' => 'IPH1-9011',
+                'barcode' => '890100000001',
                 'name' => 'iPhone 16',
                 'description' => 'Apple Smartphone',
                 'price' => 85000,
@@ -70,6 +140,9 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'category_id' => 1,
+                'supplier_id' => $allSuppliers[0]?->id,
+                'sku' => 'LAP1-9012',
+                'barcode' => '890100000002',
                 'name' => 'Gaming Laptop',
                 'description' => 'High-end gaming laptop',
                 'price' => 120000,
@@ -80,6 +153,9 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'category_id' => 1,
+                'supplier_id' => $allSuppliers[0]?->id,
+                'sku' => 'MOU1-9013',
+                'barcode' => '890100000003',
                 'name' => 'Wireless Mouse',
                 'description' => 'Bluetooth Mouse',
                 'price' => 1500,
@@ -92,6 +168,9 @@ class DatabaseSeeder extends Seeder
             // Clothing
             [
                 'category_id' => 2,
+                'supplier_id' => $allSuppliers[1]?->id,
+                'sku' => 'TSH2-9021',
+                'barcode' => '890100000004',
                 'name' => 'Cotton T-Shirt',
                 'description' => 'Premium Cotton',
                 'price' => 799,
@@ -102,6 +181,9 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'category_id' => 2,
+                'supplier_id' => $allSuppliers[1]?->id,
+                'sku' => 'JEA2-9022',
+                'barcode' => '890100000005',
                 'name' => 'Denim Jeans',
                 'description' => 'Slim Fit',
                 'price' => 1999,
@@ -114,6 +196,9 @@ class DatabaseSeeder extends Seeder
             // Books
             [
                 'category_id' => 3,
+                'supplier_id' => $allSuppliers[2]?->id,
+                'sku' => 'LAR3-9031',
+                'barcode' => '890100000006',
                 'name' => 'Laravel 12 Guide',
                 'description' => 'Complete Laravel Book',
                 'price' => 999,
@@ -124,6 +209,9 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'category_id' => 3,
+                'supplier_id' => $allSuppliers[2]?->id,
+                'sku' => 'PHP3-9032',
+                'barcode' => '890100000007',
                 'name' => 'PHP Cookbook',
                 'description' => 'Advanced PHP',
                 'price' => 1200,
@@ -136,6 +224,9 @@ class DatabaseSeeder extends Seeder
             // Home & Garden
             [
                 'category_id' => 4,
+                'supplier_id' => $allSuppliers[3]?->id,
+                'sku' => 'GAR4-9041',
+                'barcode' => '890100000008',
                 'name' => 'Garden Tool Kit',
                 'description' => 'Complete Tool Kit',
                 'price' => 2500,
@@ -148,6 +239,9 @@ class DatabaseSeeder extends Seeder
             // Sports
             [
                 'category_id' => 5,
+                'supplier_id' => $allSuppliers[4]?->id,
+                'sku' => 'BAT5-9051',
+                'barcode' => '890100000009',
                 'name' => 'Cricket Bat',
                 'description' => 'English Willow',
                 'price' => 4500,
@@ -158,6 +252,9 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'category_id' => 5,
+                'supplier_id' => $allSuppliers[4]?->id,
+                'sku' => 'BAL5-9052',
+                'barcode' => '890100000010',
                 'name' => 'Football',
                 'description' => 'FIFA Approved',
                 'price' => 1800,
@@ -168,8 +265,8 @@ class DatabaseSeeder extends Seeder
             ],
         ];
 
-        foreach ($products as $product) {
-            Product::create($product);
+        foreach ($products as $p) {
+            Product::updateOrCreate(['name' => $p['name']], $p);
         }
 
         /*
@@ -177,7 +274,6 @@ class DatabaseSeeder extends Seeder
         | Admin User
         |--------------------------------------------------------------------------
         */
-
         User::firstOrCreate(
             ['email' => 'admin@example.com'],
             [
